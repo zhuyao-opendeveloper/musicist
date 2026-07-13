@@ -1,1 +1,33 @@
-[]
+[
+  {
+    "id": 1,
+    "name": "🎵 热门推荐",
+    "description": "当前最热门的音乐精选",
+    "songs": [
+      { "id": "sh_1", "title": "Ambient Relaxation", "artist": "SoundHelix", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", "source": "builtin" },
+      { "id": "sh_2", "title": "Chill Vibes", "artist": "SoundHelix", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3", "source": "builtin" },
+      { "id": "sh_3", "title": "Electronic Dreams", "artist": "SoundHelix", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3", "source": "builtin" }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "🌙 轻音乐 · 放松",
+    "description": "放松心情的轻音乐合辑",
+    "songs": [
+      { "id": "sh_5", "title": "Lo-fi Study", "artist": "SoundHelix", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3", "source": "builtin" },
+      { "id": "sh_8", "title": "Ocean Waves", "artist": "SoundHelix", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3", "source": "builtin" },
+      { "id": "sh_9", "title": "Piano Melody", "artist": "SoundHelix", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3", "source": "builtin" },
+      { "id": "sh_6", "title": "Morning Sun", "artist": "SoundHelix", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3", "source": "builtin" }
+    ]
+  },
+  {
+    "id": 3,
+    "name": "⚡ 电子音乐",
+    "description": "充满活力的电子节拍",
+    "songs": [
+      { "id": "sh_3", "title": "Electronic Dreams", "artist": "SoundHelix", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3", "source": "builtin" },
+      { "id": "sh_7", "title": "Night Drive", "artist": "SoundHelix", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3", "source": "builtin" },
+      { "id": "sh_10", "title": "Sunset Boulevard", "artist": "SoundHelix", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3", "source": "builtin" }
+    ]
+  }
+]

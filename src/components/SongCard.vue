@@ -1,17 +1,19 @@
 <script setup>
 import { inject, computed } from 'vue'
-import { Play, Pause, Heart, MoreHorizontal } from 'lucide-vue-next'
+import { Play, Pause, Heart, Music } from 'lucide-vue-next'
 
 const props = defineProps({
   song: {
     type: Object,
-    required: true
-  }
+    required: true,
+  },
 })
 
 const music = inject('music')
-const isPlaying = music.isPlaying
-const currentSong = music.currentSong
+
+const isSongPlaying = computed(() => {
+  return music.currentSong.value?.id === props.song.id && music.isPlaying.value
+})
 
 const isSongLiked = computed(() => {
   return music.isLiked(props.song)
@@ -25,54 +27,95 @@ const handleLike = (e) => {
   e.stopPropagation()
   music.toggleLike(props.song)
 }
+
+const sourceBadgeColors = {
+  deezer: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+  netease: 'bg-red-500/20 text-red-300 border-red-500/30',
+  builtin: 'bg-green-500/20 text-green-300 border-green-500/30',
+  theAudioDB: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+}
+
+const getSourceColor = (source) => {
+  return sourceBadgeColors[props.song.source] || 'bg-gray-500/20 text-gray-300 border-gray-500/30'
+}
 </script>
 
 <template>
   <div
-    class="flex items-center space-x-4 p-4 bg-dark-800/50 rounded-xl hover:bg-dark-700/50 transition-all cursor-pointer group"
+    class="glass-card overflow-hidden cursor-pointer group"
     @click="handlePlay"
   >
-    <div class="relative w-12 h-12 flex-shrink-0">
+    <!-- Cover Image -->
+    <div class="relative aspect-square overflow-hidden">
       <img
         v-if="song.cover"
         :src="song.cover"
         :alt="song.title"
-        class="w-full h-full object-cover rounded-lg"
+        class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+        loading="lazy"
       />
       <div
         v-else
-        class="w-full h-full bg-gradient-to-br from-primary-500/30 to-primary-700/30 rounded-lg flex items-center justify-center"
+        class="w-full h-full bg-gradient-to-br from-primary-500/30 via-secondary-500/20 to-dark-500 flex items-center justify-center"
       >
-        <Play class="w-5 h-5 text-primary-400" />
+        <Music class="w-12 h-12 text-white/30" />
       </div>
-      <div
-        class="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+
+      <!-- Play Overlay -->
+      <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
+        <div
+          :class="[
+            'w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg',
+            isSongPlaying
+              ? 'bg-gradient-primary shadow-primary-500/50 scale-110'
+              : 'bg-white/20 backdrop-blur-sm group-hover:scale-110 group-hover:bg-gradient-primary group-hover:shadow-primary-500/50'
+          ]"
+        >
+          <Play v-if="!isSongPlaying" class="w-6 h-6 text-white ml-1" />
+          <Pause v-else class="w-6 h-6 text-white" />
+        </div>
+      </div>
+
+      <!-- Source Badge -->
+      <span
+        :class="[
+          'absolute top-3 left-3 px-2 py-0.5 text-xs rounded-full border font-medium',
+          getSourceColor(song.source)
+        ]"
       >
-        <Play
-          v-if="currentSong.value?.title !== song.title || !isPlaying.value"
-          class="w-6 h-6 text-white"
-        />
-        <Pause v-else class="w-6 h-6 text-white" />
-      </div>
-    </div>
+        {{ song.sourceName }}
+      </span>
 
-    <div class="flex-1 min-w-0">
-      <h4 class="text-white font-medium truncate">{{ song.title }}</h4>
-      <p class="text-gray-400 text-sm truncate">{{ song.artist }}</p>
-    </div>
-
-    <div class="flex items-center space-x-2">
-      <span class="text-gray-500 text-sm">{{ song.sourceName }}</span>
+      <!-- Like Button -->
       <button
         @click="handleLike"
-        class="p-2 rounded-lg transition-colors"
-        :class="isSongLiked ? 'text-red-500' : 'text-gray-400 hover:text-white hover:bg-dark-600'"
+        class="absolute top-3 right-3 p-2 rounded-full bg-black/30 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
       >
-        <Heart :class="['w-4 h-4', isSongLiked ? 'fill-red-500' : '']" />
+        <Heart
+          :class="[
+            'w-4 h-4 transition-colors',
+            isSongLiked ? 'fill-red-500 text-red-500' : 'text-white'
+          ]"
+        />
       </button>
-      <button class="p-2 text-gray-400 hover:text-white hover:bg-dark-600 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
-        <MoreHorizontal class="w-4 h-4" />
-      </button>
+    </div>
+
+    <!-- Song Info -->
+    <div class="p-4">
+      <h3 class="text-white font-semibold truncate group-hover:text-primary-300 transition-colors">
+        {{ song.title }}
+      </h3>
+      <p class="text-gray-400 text-sm truncate mt-1">
+        {{ song.artist }}
+      </p>
+
+      <!-- Duration -->
+      <div class="flex items-center space-x-2 mt-2">
+        <div class="flex-1 h-px bg-white/5"></div>
+        <span class="text-gray-500 text-xs">
+          {{ Math.floor((song.duration || 0) / 60) }}:{{ String(Math.floor((song.duration || 0) % 60)).padStart(2, '0') }}
+        </span>
+      </div>
     </div>
   </div>
 </template>

@@ -1,1 +1,29 @@
-[]
+[
+  {
+    "id": 1,
+    "name": "SoundHelix 免费音源",
+    "url": "https://www.soundhelix.com/examples/mp3/",
+    "songs": [
+      { "id": "sh_1", "title": "Ambient Relaxation", "artist": "SoundHelix", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", "cover": "", "source": "builtin", "sourceName": "免费音源" },
+      { "id": "sh_2", "title": "Chill Vibes", "artist": "SoundHelix", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3", "cover": "", "source": "builtin", "sourceName": "免费音源" },
+      { "id": "sh_3", "title": "Electronic Dreams", "artist": "SoundHelix", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3", "cover": "", "source": "builtin", "sourceName": "免费音源" },
+      { "id": "sh_4", "title": "Jazz Fusion", "artist": "SoundHelix", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3", "cover": "", "source": "builtin", "sourceName": "免费音源" },
+      { "id": "sh_5", "title": "Lo-fi Study", "artist": "SoundHelix", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3", "cover": "", "source": "builtin", "sourceName": "免费音源" },
+      { "id": "sh_6", "title": "Morning Sun", "artist": "SoundHelix", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3", "cover": "", "source": "builtin", "sourceName": "免费音源" },
+      { "id": "sh_7", "title": "Night Drive", "artist": "SoundHelix", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3", "cover": "", "source": "builtin", "sourceName": "免费音源" },
+      { "id": "sh_8", "title": "Ocean Waves", "artist": "SoundHelix", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3", "cover": "", "source": "builtin", "sourceName": "免费音源" },
+      { "id": "sh_9", "title": "Piano Melody", "artist": "SoundHelix", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3", "cover": "", "source": "builtin", "sourceName": "免费音源" },
+      { "id": "sh_10", "title": "Sunset Boulevard", "artist": "SoundHelix", "url": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3", "cover": "", "source": "builtin", "sourceName": "免费音源" }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Deezer 热门推荐",
+    "url": "https://api.deezer.com/chart/0",
+    "songs": [
+      { "id": "dz_t1", "title": "Deezer Top Track 1", "artist": "Deezer", "url": "https://cdns-preview-3.dzcdn.net/stream/c-3b5b5a5a5a5a5a5a5a5a5a5a5a5a5a5a-5", "cover": "", "source": "deezer", "sourceName": "Deezer" },
+      { "id": "dz_t2", "title": "Deezer Top Track 2", "artist": "Deezer", "url": "", "cover": "", "source": "deezer", "sourceName": "Deezer" },
+      { "id": "dz_t3", "title": "Deezer Top Track 3", "artist": "Deezer", "url": "", "cover": "", "source": "deezer", "sourceName": "Deezer" }
+    ]
+  }
+]

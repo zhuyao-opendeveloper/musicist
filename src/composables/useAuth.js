@@ -1,39 +1,50 @@
 import { ref, computed } from 'vue'
 
-const TOKEN_KEY = 'musicist_github_token'
-const USER_KEY = 'musicist_github_user'
+const ADMIN_PASSWORD_KEY = 'musicist_admin_password'
+const AUTHENTICATED_KEY = 'musicist_authenticated'
 
-const token = ref(localStorage.getItem(TOKEN_KEY) || '')
-const user = ref(JSON.parse(localStorage.getItem(USER_KEY) || 'null'))
+const adminPassword = ref(localStorage.getItem(ADMIN_PASSWORD_KEY) || '')
+const isAuthenticated = ref(localStorage.getItem(AUTHENTICATED_KEY) === 'true')
 
 export function useAuth() {
-  const isLoggedIn = computed(() => !!token.value)
+  const isSetupRequired = computed(() => !adminPassword.value)
 
-  const login = (newToken, newUser) => {
-    token.value = newToken
-    user.value = newUser
-    localStorage.setItem(TOKEN_KEY, newToken)
-    localStorage.setItem(USER_KEY, JSON.stringify(newUser))
+  const setupPassword = (password) => {
+    const hashed = btoa(password)
+    localStorage.setItem(ADMIN_PASSWORD_KEY, hashed)
+    adminPassword.value = hashed
+    isAuthenticated.value = true
+    localStorage.setItem(AUTHENTICATED_KEY, 'true')
+    return true
+  }
+
+  const login = (password) => {
+    const hashedInput = btoa(password)
+    if (hashedInput === adminPassword.value) {
+      isAuthenticated.value = true
+      localStorage.setItem(AUTHENTICATED_KEY, 'true')
+      return true
+    }
+    return false
   }
 
   const logout = () => {
-    token.value = ''
-    user.value = null
-    localStorage.removeItem(TOKEN_KEY)
-    localStorage.removeItem(USER_KEY)
+    isAuthenticated.value = false
+    localStorage.removeItem(AUTHENTICATED_KEY)
   }
 
-  const getToken = () => token.value
-
-  const getUser = () => user.value
+  const checkAuth = () => {
+    const stored = localStorage.getItem(AUTHENTICATED_KEY)
+    isAuthenticated.value = stored === 'true' && !!adminPassword.value
+  }
 
   return {
-    isLoggedIn,
-    token,
-    user,
+    adminPassword,
+    isAuthenticated,
+    isSetupRequired,
+    setupPassword,
     login,
     logout,
-    getToken,
-    getUser,
+    checkAuth,
   }
 }

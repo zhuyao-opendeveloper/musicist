@@ -3,41 +3,112 @@
 @tailwind utilities;
 
 :root {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Inter', 'Noto Sans SC', system-ui, -apple-system, sans-serif;
+  --glass-bg: rgba(15, 15, 20, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --primary-gradient: linear-gradient(135deg, #6366f1, #ec4899);
+  --primary-gradient-reverse: linear-gradient(135deg, #ec4899, #6366f1);
 }
 
 body {
   margin: 0;
   min-height: 100vh;
   background: linear-gradient(135deg, #0f0f14 0%, #15151c 50%, #1c1c25 100%);
+  background-attachment: fixed;
+  transition: background-image 0.8s ease;
+}
+
+body.has-bing-bg {
+  background-blend-mode: overlay;
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+body.has-bing-bg::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(15, 15, 20, 0.75) 0%, rgba(15, 15, 20, 0.85) 100%);
+  z-index: -1;
+  pointer-events: none;
 }
 
 #app {
   min-height: 100vh;
+  position: relative;
+  z-index: 1;
 }
 
+/* ===== Glass Styles ===== */
+.glass {
+  background: rgba(15, 15, 20, 0.6);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-light {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.glass-card {
+  background: rgba(23, 23, 35, 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  background: rgba(30, 30, 45, 0.8);
+  border-color: rgba(99, 102, 241, 0.3);
+  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.15);
+  transform: translateY(-4px);
+}
+
+/* ===== Scrollbar ===== */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #15151c;
+  background: rgba(15, 15, 20, 0.5);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2a2a36;
+  background: linear-gradient(180deg, #6366f1, #ec4899);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3a3a46;
+  background: linear-gradient(180deg, #818cf8, #f472b6);
 }
 
+/* ===== Card Hover Animation ===== */
+.card-hover-anim {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.3s ease;
+}
+
+.card-hover-anim:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 40px rgba(99, 102, 241, 0.2), 0 4px 12px rgba(236, 72, 153, 0.1);
+}
+
+/* ===== Audio Hiding ===== */
 audio {
   display: none;
 }
 
+/* ===== Danmaku Styles ===== */
 .danmaku-container {
   overflow: hidden;
   pointer-events: none;
@@ -47,4 +118,105 @@ audio {
   position: absolute;
   white-space: nowrap;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* ===== Gradient Text ===== */
+.gradient-text {
+  background: linear-gradient(135deg, #6366f1, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-warm {
+  background: linear-gradient(135deg, #6366f1, #f97316, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ===== Range Input Styling ===== */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #ec4899);
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
+  transition: transform 0.2s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #ec4899);
+  border: none;
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
+}
+
+/* ===== Shimmer Effect ===== */
+.shimmer {
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* ===== Play Overlay ===== */
+.play-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: inherit;
+}
+
+.play-overlay:hover,
+.group:hover .play-overlay {
+  opacity: 1;
+}
+
+/* ===== Pulse Ring ===== */
+.pulse-ring {
+  animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(99, 102, 241, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+  }
 }

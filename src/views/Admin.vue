@@ -1,4 +1,4 @@
-<script setup>
+﻿<script setup>
 import { ref, inject, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { 
@@ -219,12 +219,6 @@ const getClassificationColor = (classification) => {
   return colors[classification] || 'bg-gray-600/20 text-gray-400'
 }
 
-watch(() => auth.isLoggedIn.value, (loggedIn) => {
-  if (!loggedIn && activeSection.value !== 'config') {
-    handleLoginCallback()
-  }
-})
-
 onMounted(async () => {
   github.loadConfig()
   configForm.value = { ...github.config.value }
@@ -345,7 +339,7 @@ onMounted(async () => {
               <div class="p-4 border-b border-dark-600 flex items-center justify-between">
                 <div>
                   <h3 class="text-white font-medium">{{ source.name }}</h3>
-                  <p class="text-gray-400 text-sm">{{ source.songs.length }} 首歌曲</p>
+                  <p class="text-gray-400 text-sm">{{ source.songs.length }} 首歌</p>
                 </div>
                 <div class="flex items-center space-x-2">
                   <button
@@ -358,8 +352,7 @@ onMounted(async () => {
                   <button
                     @click="deleteSource(source.id)"
                     class="p-2 text-red-400 hover:bg-red-600/20 rounded-lg transition-colors"
-                    title="删除音乐源"
-                  >
+                    title="删除音乐源" >
                     <Trash2 class="w-5 h-5" />
                   </button>
                 </div>
@@ -542,7 +535,7 @@ onMounted(async () => {
                 </div>
                 <div class="text-center">
                   <div class="text-2xl font-bold text-yellow-400">{{ danmaku.flaggedDanmaku.value.length }}</div>
-                  <div class="text-gray-400 text-sm">待审查</div>
+                  <div class="text-gray-400 text-sm">待审核</div>
                 </div>
                 <div class="text-center">
                   <div class="text-2xl font-bold text-green-400">
@@ -559,11 +552,11 @@ onMounted(async () => {
                 <span>AI 审查说明</span>
               </h3>
               <ul class="space-y-2 text-gray-400">
-                <li>• 弹幕发送时会自动进行AI内容审查</li>
-                <li>• 审查结果分为：正常、垃圾信息、有害内容</li>
-                <li>• 可点击"AI审查弹幕"对当前歌曲的所有弹幕进行批量审查</li>
-                <li>• 审查结果会显示置信度和理由</li>
-                <li>• 管理员可删除标记为不良的弹幕</li>
+                <li>�?弹幕发送时会自动进行AI内容审查</li>
+                <li>�?审查结果分为：正常、垃圾信息、有害内容</li>
+                <li>�?可点击"AI审查弹幕"对当前歌曲的所有弹幕进行批量审查</li>
+                <li>�?审查结果会显示置信度和理由</li>
+                <li>�?管理员可删除标记为不良的弹幕</li>
               </ul>
             </div>
           </div>
@@ -588,9 +581,9 @@ onMounted(async () => {
             <div class="bg-dark-800 rounded-xl border border-dark-600 p-6">
               <h3 class="text-white font-medium mb-4">权限说明</h3>
               <ul class="space-y-2 text-gray-400">
-                <li>• 管理员：可添加/删除音乐源和歌曲</li>
-                <li>• 普通用户：可发送弹幕、收藏歌曲</li>
-                <li>• 所有操作通过 GitHub API 同步到仓库</li>
+                <li>�?管理员：可添加删除音乐源和歌曲</li>
+                <li>�?普通用户：可发送弹幕、收藏歌曲</li>
+                <li>�?所有操作通过 GitHub API 同步到仓库</li>
               </ul>
             </div>
           </div>
@@ -655,7 +648,7 @@ onMounted(async () => {
     >
       <div class="bg-dark-800 rounded-xl border border-dark-600 w-full max-w-md p-6">
         <div class="flex items-center justify-between mb-6">
-          <h3 class="text-white font-medium text-lg">添加歌曲到 {{ selectedSource?.name }}</h3>
+          <h3 class="text-white font-medium text-lg">添加歌曲到{{ selectedSource?.name }}</h3>
           <button @click="showAddSongModal = false" class="text-gray-400 hover:text-white">
             <X class="w-5 h-5" />
           </button>
@@ -766,3 +759,9 @@ onMounted(async () => {
     </div>
   </div>
 </template>
+
+
+
+
+
+
