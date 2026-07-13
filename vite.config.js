@@ -13,4 +13,19 @@ export default defineConfig({
   build: {
     outDir: 'dist',
   },
+  server: {
+    // CORS proxy for music APIs
+    proxy: {
+      '/api-proxy/deezer': {
+        target: 'https://api.deezer.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api-proxy\/deezer/, ''),
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            proxyReq.setHeader('Origin', 'https://api.deezer.com')
+          })
+        }
+      },
+    },
+  },
 })
