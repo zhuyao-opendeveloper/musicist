@@ -10,7 +10,6 @@ const props = defineProps({
 })
 
 const music = inject('music')
-const playAudio = inject('playAudio')
 
 const isSongPlaying = computed(() => {
   return music.currentSong.value?.id === props.song.id && music.isPlaying.value
@@ -20,10 +19,19 @@ const isSongLiked = computed(() => {
   return music.isLiked(props.song)
 })
 
+const playUrl = (url) => {
+  if (!url) return
+  // 从 index.html 获取全局 audio 元素（始终在 DOM 中）
+  const el = document.getElementById('global-player')
+  if (!el) return
+  el.src = url
+  el.volume = music.volume.value
+  el.play().catch(err => console.warn('Playback failed:', err))
+}
+
 const handlePlay = () => {
   music.playSong(props.song)
-  // 直接触发全局 audio 播放
-  if (playAudio) playAudio(props.song)
+  playUrl(props.song.url)
 }
 
 const handleLike = (e) => {
