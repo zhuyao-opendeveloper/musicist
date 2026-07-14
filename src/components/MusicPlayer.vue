@@ -1,5 +1,5 @@
 <script setup>
-import { ref, inject, computed, watch, onMounted, nextTick } from 'vue'
+import { ref, inject, computed, watch, onMounted } from 'vue'
 import {
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX,
   Heart, Repeat, Shuffle, ListMusic, ChevronUp, ChevronDown
@@ -172,13 +172,12 @@ const playAudio = (song) => {
 
 watch(() => music.currentSong.value, (newSong) => {
   if (newSong) {
-    // 更新当前播放索引
     if (playlist.value.length > 0) {
       const index = playlist.value.findIndex(s => s.id === newSong.id || s.title === newSong.title)
       if (index !== -1) currentIndex.value = index
     }
-    // 等 v-if 渲染出 audio 元素后再设置音频源
-    nextTick(() => { nextTick(() => playAudio(newSong)) })
+    // audio 元素始终存在，直接播放
+    playAudio(newSong)
   }
 })
 
@@ -200,21 +199,23 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <!-- 始终渲染 audio 元素，确保 ref 一直可用 -->
+  <audio
+    ref="audioRef"
+    @timeupdate="handleTimeUpdate"
+    @loadedmetadata="handleLoadedMetadata"
+    @ended="handleEnded"
+    @pause="music.pause"
+    @play="music.resume"
+    @error="console.warn('Audio error')"
+  />
+
   <Teleport to="body">
     <!-- Mini Player -->
     <div
       v-if="music.currentSong.value"
       class="fixed bottom-0 left-0 right-0 z-40 glass border-t border-white/5 transition-all duration-300"
     >
-      <audio
-        ref="audioRef"
-        @timeupdate="handleTimeUpdate"
-        @loadedmetadata="handleLoadedMetadata"
-        @ended="handleEnded"
-        @pause="music.pause"
-        @play="music.resume"
-        @error="console.warn('Audio error')"
-      />
 
       <!-- Tiny Progress Bar (top edge) -->
       <div class="absolute top-0 left-0 right-0 h-0.5 bg-white/5">
