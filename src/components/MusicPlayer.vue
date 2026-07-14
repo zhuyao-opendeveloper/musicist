@@ -161,10 +161,20 @@ const progressPercent = computed(() => {
 })
 
 watch(() => music.currentSong.value, (newSong) => {
-  if (newSong && playlist.value.length > 0) {
-    const index = playlist.value.findIndex(s => s.id === newSong.id || s.title === newSong.title)
-    if (index !== -1) {
-      currentIndex.value = index
+  if (newSong) {
+    // 更新当前播放索引
+    if (playlist.value.length > 0) {
+      const index = playlist.value.findIndex(s => s.id === newSong.id || s.title === newSong.title)
+      if (index !== -1) currentIndex.value = index
+    }
+    // 真正播放音频
+    if (audioRef.value) {
+      audioRef.value.src = newSong.url
+      audioRef.value.volume = music.volume.value
+      audioRef.value.play().catch((err) => {
+        console.warn('Playback failed:', err)
+      })
+      danmaku.loadDanmaku(newSong.id || newSong.title)
     }
   }
 })
