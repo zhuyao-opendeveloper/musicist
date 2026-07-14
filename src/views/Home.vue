@@ -14,6 +14,7 @@ const searchQuery = ref('')
 const activeTab = ref('all')
 const isSearching = ref(false)
 const trendingSongs = ref([])
+const isInitialLoading = ref(true)
 
 const tabs = [
   { id: 'all', label: '全部音乐', icon: Music },
@@ -74,14 +75,25 @@ const loadTrending = async () => {
   } catch { /* fallback */ }
 }
 
-onMounted(async () => {
-  bing.fetchBingImage()
-  await music.loadSources()
-  await music.loadPlaylists()
-  music.loadListeningHistory()
-  music.loadLikedSongs()
-  await loadTrending()
-  musicSources.searchResults.value = [...musicSources.trendingSongs.value]
+onMounted(() => {
+  // App.vue 已经提前加载数据了，这里只需要等待结果
+  // 用 watch 或者检测 trendingSongs 到了就取消 loading
+  const checkLoaded = () => {
+    if (musicSources.trendingSongs.value.length > 0) {
+      trendingSongs.value = musicSources.trendingSongs.value
+      musicSources.searchResults.value = [...musicSources.trendingSongs.value]
+      isInitialLoading.value = false
+    } else if (musicSources.searchResults.value.length > 0) {
+      isInitialLoading.value = false
+    } else {
+      // 数据还没到，等 200ms 再检查一次
+      setTimeout(checkLoaded, 200)
+    }
+  }
+  checkLoaded()
+
+  // 兜底：最多等 8 秒后关闭 loading
+  setTimeout(() => { isInitialLoading.value = false }, 8000)
 })
 </script>
 
@@ -160,7 +172,16 @@ onMounted(async () => {
           <SongCard v-for="song in filteredSongs" :key="song.id || song.title" :song="song" />
         </div>
 
-        <!-- Empty -->
+        <!-- Initial loading -->
+        <div v-else-if="isInitialLoading" class="text-center py-20 glass-card max-w-md mx-auto">
+          <div class="w-16 h-16 rounded-full bg-gradient-primary/20 flex items-center justify-center mx-auto mb-4">
+            <RefreshCw class="w-8 h-8 text-primary-400 animate-spin" />
+          </div>
+          <h3 class="text-white text-lg font-medium mb-2">正在加载音乐...</h3>
+          <p class="text-gray-400 text-sm">正在获取推荐曲目，请稍候</p>
+        </div>
+
+        <!-- Empty (only after loading finished) -->
         <div v-else class="text-center py-20 glass-card max-w-md mx-auto">
           <div class="w-16 h-16 rounded-full bg-gradient-primary/20 flex items-center justify-center mx-auto mb-4">
             <Disc3 class="w-8 h-8 text-primary-400" />

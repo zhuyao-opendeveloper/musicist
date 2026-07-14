@@ -25,7 +25,25 @@ provide('bing', bing)
 provide('musicSources', musicSources)
 
 onMounted(() => {
+  // ========== 启动时立即并行加载所有数据 ==========
+  // 不 await，不阻塞 UI 渲染，数据到了自动更新界面
+
+  // 1. Bing 壁纸
   bing.fetchBingImage()
+
+  // 2. 本地缓存数据（同步，瞬间完成）
+  music.loadListeningHistory()
+  music.loadLikedSongs()
+
+  // 3. 远程数据（并行触发，谁先到谁先渲染）
+  Promise.allSettled([
+    music.loadSources(),
+    music.loadPlaylists(),
+    // 音乐推荐数据 — 用户最关心的，优先加载
+    musicSources.getTrending().then(songs => {
+      musicSources.searchResults.value = [...songs]
+    })
+  ])
 })
 </script>
 
