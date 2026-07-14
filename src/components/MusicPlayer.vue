@@ -161,25 +161,34 @@ const progressPercent = computed(() => {
 })
 
 const playAudio = (song) => {
-  if (!song || !audioRef.value) return
-  audioRef.value.src = song.url
+  if (!song) return
+  if (!audioRef.value) {
+    console.warn('playAudio: audioRef not ready yet, retrying...')
+    setTimeout(() => playAudio(song), 100)
+    return
+  }
+  const url = song.url
+  if (!url) {
+    console.warn('playAudio: song has no URL', song.title)
+    return
+  }
+  console.log('playAudio:', song.title, url.substring(0, 60))
+  audioRef.value.src = url
   audioRef.value.volume = music.volume.value
   audioRef.value.play().catch((err) => {
-    console.warn('Playback failed:', err)
+    console.warn('Playback failed:', err.message)
   })
   danmaku.loadDanmaku(song.id || song.title)
 }
 
 watch(() => music.currentSong.value, (newSong) => {
-  if (newSong) {
-    if (playlist.value.length > 0) {
-      const index = playlist.value.findIndex(s => s.id === newSong.id || s.title === newSong.title)
-      if (index !== -1) currentIndex.value = index
-    }
-    // audio 元素始终存在，直接播放
-    playAudio(newSong)
+  if (!newSong) return
+  if (playlist.value.length > 0) {
+    const index = playlist.value.findIndex(s => s.id === newSong.id || s.title === newSong.title)
+    if (index !== -1) currentIndex.value = index
   }
-})
+  playAudio(newSong)
+}, { immediate: true })
 
 onMounted(() => {
   if (audioRef.value) {
