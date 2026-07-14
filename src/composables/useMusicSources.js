@@ -76,14 +76,28 @@ export function useMusicSources() {
   const activeGenre = ref('all')
   const error = ref('')
 
+  // Helper: fetch with timeout (ms)
+  const fetchWithTimeout = async (url, options = {}, timeoutMs = 5000) => {
+    const controller = new AbortController()
+    const id = setTimeout(() => controller.abort(), timeoutMs)
+    try {
+      const res = await fetch(url, { ...options, signal: controller.signal })
+      clearTimeout(id)
+      return res
+    } catch (e) {
+      clearTimeout(id)
+      throw e
+    }
+  }
+
   // Get trending / chart songs from multiple sources
   const getTrending = async () => {
     isLoading.value = true
     const all = []
 
-    // 1. Deezer chart (with CORS proxy fallback)
+    // 1. Deezer chart (5s timeout)
     try {
-      const res = await tryFetch('https://api.deezer.com/chart/0?limit=10')
+      const res = await tryFetch('https://api.deezer.com/chart/0?limit=10', {}, 5000)
       const data = res ? await res.json() : null
       if (data?.tracks?.data) {
         data.tracks.data.forEach(s => {
@@ -97,10 +111,12 @@ export function useMusicSources() {
       }
     } catch { /* fallback */ }
 
-    // 2. Jamendo trending (free, CORS-friendly)
+    // 2. Jamendo trending (5s timeout)
     try {
-      const res = await fetch(
-        `https://api.jamendo.com/v3.0/tracks/?client_id=${JAMENDO_CLIENT_ID}&format=json&limit=10&order=popularity_total&include=musicinfo`
+      const res = await fetchWithTimeout(
+        `https://api.jamendo.com/v3.0/tracks/?client_id=${JAMENDO_CLIENT_ID}&format=json&limit=10&order=popularity_total&include=musicinfo`,
+        {},
+        5000
       )
       if (res.ok) {
         const data = await res.json()
@@ -121,7 +137,7 @@ export function useMusicSources() {
       }
     } catch { /* fallback */ }
 
-    // 3. Built-in songs as baseline
+    // 3. Built-in songs as baseline (always available, no network)
     const builtin = [...BUILT_IN_MUSIC]
 
     // Combine: Deezer + Jamendo + builtin
@@ -227,11 +243,18 @@ export function useMusicSources() {
     return searchResults.value
   }
 
-  // Helper: fetch with CORS proxy fallback
-  const tryFetch = async (url, options = {}) => {
+  // Helper: fetch with CORS proxy fallback + timeout
+  const tryFetch = async (url, options = {}, timeoutMs = 5000) => {
+    const controller = new AbortController()
+    const id = setTimeout(() => controller.abort(), timeoutMs)
+    const opts = { ...options, signal: controller.signal }
+
+    const cleanup = () => clearTimeout(id)
+
     // Try direct
     try {
-      const res = await fetch(url, options)
+      const res = await fetch(url, opts)
+      cleanup()
       if (res.ok) return res
     } catch { /* try proxy */ }
 
@@ -239,7 +262,8 @@ export function useMusicSources() {
     if (url.includes('api.deezer.com')) {
       const proxyUrl = url.replace('https://api.deezer.com', '/api-proxy/deezer')
       try {
-        const res = await fetch(proxyUrl, options)
+        const res = await fetch(proxyUrl, opts)
+        cleanup()
         if (res.ok) return res
       } catch { /* try next */ }
     }
@@ -247,10 +271,12 @@ export function useMusicSources() {
     // Fallback: use public CORS proxy
     try {
       const proxyUrl = CORS_PROXY + encodeURIComponent(url)
-      const res = await fetch(proxyUrl, options)
+      const res = await fetch(proxyUrl, opts)
+      cleanup()
       if (res.ok) return res
     } catch { /* give up */ }
 
+    cleanup()
     return null
   }
 
