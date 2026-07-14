@@ -219,8 +219,7 @@ onUnmounted(() => {
     @error="console.warn('Audio error')"
   />
 
-  <Teleport to="body">
-    <!-- Mini Player -->
+  <!-- Mini Player -->
     <div
       v-if="music.currentSong.value"
       class="fixed bottom-0 left-0 right-0 z-40 glass border-t border-white/5 transition-all duration-300"
@@ -417,5 +416,4 @@ onUnmounted(() => {
         </div>
       </div>
     </div>
-  </Teleport>
 </template>
