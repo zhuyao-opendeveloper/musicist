@@ -10,6 +10,7 @@ const props = defineProps({
 })
 
 const music = inject('music')
+const playAudio = inject('playAudio')
 
 const isSongPlaying = computed(() => {
   return music.currentSong.value?.id === props.song.id && music.isPlaying.value
@@ -21,6 +22,8 @@ const isSongLiked = computed(() => {
 
 const handlePlay = () => {
   music.playSong(props.song)
+  // 直接触发全局 audio 播放
+  if (playAudio) playAudio(props.song)
 }
 
 const handleLike = (e) => {

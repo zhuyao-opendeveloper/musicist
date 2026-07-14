@@ -1,5 +1,5 @@
 <script setup>
-import { provide, onMounted } from 'vue'
+import { provide, onMounted, ref } from 'vue'
 import { useAuth } from './composables/useAuth'
 import { useMusic } from './composables/useMusic'
 import { useDanmaku } from './composables/useDanmaku'
@@ -15,6 +15,19 @@ const github = useGitHub()
 const ai = useAI()
 const bing = useBing()
 const musicSources = useMusicSources()
+
+const globalAudio = ref(null)
+provide('globalAudio', globalAudio)
+
+// 提供一个全局播放函数，任何组件都能调用
+const playAudio = (song) => {
+  if (!song || !globalAudio.value) return
+  const el = globalAudio.value
+  el.src = song.url
+  el.volume = music.volume.value
+  el.play().catch(err => console.warn('Playback failed:', err))
+}
+provide('playAudio', playAudio)
 
 provide('auth', auth)
 provide('music', music)
@@ -48,5 +61,7 @@ onMounted(() => {
 </script>
 
 <template>
+  <!-- 全局 audio 元素：始终存在于 DOM，供 MusicCard/MusicPlayer 使用 -->
+  <audio ref="globalAudio" style="display:none" />
   <router-view />
 </template>
