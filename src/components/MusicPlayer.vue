@@ -1,5 +1,5 @@
 <script setup>
-import { ref, inject, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, inject, computed, watch, onMounted, nextTick } from 'vue'
 import {
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX,
   Heart, Repeat, Shuffle, ListMusic, ChevronUp, ChevronDown
@@ -160,6 +160,16 @@ const progressPercent = computed(() => {
   return Math.min(100, (music.currentTime.value / dur) * 100)
 })
 
+const playAudio = (song) => {
+  if (!song || !audioRef.value) return
+  audioRef.value.src = song.url
+  audioRef.value.volume = music.volume.value
+  audioRef.value.play().catch((err) => {
+    console.warn('Playback failed:', err)
+  })
+  danmaku.loadDanmaku(song.id || song.title)
+}
+
 watch(() => music.currentSong.value, (newSong) => {
   if (newSong) {
     // 更新当前播放索引
@@ -167,21 +177,18 @@ watch(() => music.currentSong.value, (newSong) => {
       const index = playlist.value.findIndex(s => s.id === newSong.id || s.title === newSong.title)
       if (index !== -1) currentIndex.value = index
     }
-    // 真正播放音频
-    if (audioRef.value) {
-      audioRef.value.src = newSong.url
-      audioRef.value.volume = music.volume.value
-      audioRef.value.play().catch((err) => {
-        console.warn('Playback failed:', err)
-      })
-      danmaku.loadDanmaku(newSong.id || newSong.title)
-    }
+    // 等 v-if 渲染出 audio 元素后再设置音频源
+    nextTick(() => { nextTick(() => playAudio(newSong)) })
   }
 })
 
 onMounted(() => {
   if (audioRef.value) {
     audioRef.value.volume = music.volume.value
+    // 如果已经有选中的歌曲，立即播放
+    if (music.currentSong.value) {
+      playAudio(music.currentSong.value)
+    }
   }
 })
 
