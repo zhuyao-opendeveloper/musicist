@@ -76,18 +76,15 @@ export function useMusicSources() {
   const activeGenre = ref('all')
   const error = ref('')
 
-  // Helper: fetch with timeout (ms)
-  const fetchWithTimeout = async (url, options = {}, timeoutMs = 5000) => {
+  // Helper: quick fetch with timeout
+  const fetchQuick = async (url, timeoutMs = 4000) => {
     const controller = new AbortController()
     const id = setTimeout(() => controller.abort(), timeoutMs)
     try {
-      const res = await fetch(url, { ...options, signal: controller.signal })
+      const res = await fetch(url, { signal: controller.signal })
       clearTimeout(id)
       return res
-    } catch (e) {
-      clearTimeout(id)
-      throw e
-    }
+    } catch { clearTimeout(id); throw new Error('timeout') }
   }
 
   // Get trending / chart songs from multiple sources
@@ -95,47 +92,53 @@ export function useMusicSources() {
     isLoading.value = true
     const all = []
 
-    // 1. Deezer chart (5s timeout)
-    try {
-      const res = await tryFetch('https://api.deezer.com/chart/0?limit=10', {}, 5000)
-      const data = res ? await res.json() : null
-      if (data?.tracks?.data) {
-        data.tracks.data.forEach(s => {
-          all.push({
-            id: `deezer_${s.id}`, title: s.title || 'Unknown',
-            artist: s.artist?.name || 'Unknown', url: s.preview || '',
-            cover: s.album?.cover_medium || '', source: 'deezer',
-            sourceName: 'Deezer', duration: s.duration || 0,
-          })
-        })
-      }
-    } catch { /* fallback */ }
-
-    // 2. Jamendo trending (5s timeout)
-    try {
-      const res = await fetchWithTimeout(
-        `https://api.jamendo.com/v3.0/tracks/?client_id=${JAMENDO_CLIENT_ID}&format=json&limit=10&order=popularity_total&include=musicinfo`,
-        {},
-        5000
-      )
-      if (res.ok) {
-        const data = await res.json()
-        if (data.results) {
-          data.results.forEach((s, i) => {
-            all.push({
-              id: `jamendo_${s.id}`,
-              title: s.name || 'Unknown',
-              artist: s.artist_name || 'Unknown',
-              url: s.audio || '',
-              cover: s.image || BUILT_IN_COVERS[i % BUILT_IN_COVERS.length],
-              source: 'jamendo',
-              sourceName: 'Jamendo',
-              duration: s.duration || 0,
+    // 并行请求 Deezer + Jamendo
+    await Promise.allSettled([
+      // Deezer chart
+      (async () => {
+        try {
+          const res = await tryFetch('https://api.deezer.com/chart/0?limit=10', {}, 4000)
+          const data = res ? await res.json() : null
+          if (data?.tracks?.data) {
+            data.tracks.data.forEach(s => {
+              all.push({
+                id: `deezer_${s.id}`, title: s.title || 'Unknown',
+                artist: s.artist?.name || 'Unknown', url: s.preview || '',
+                cover: s.album?.cover_medium || '', source: 'deezer',
+                sourceName: 'Deezer', duration: s.duration || 0,
+              })
             })
-          })
-        }
-      }
-    } catch { /* fallback */ }
+          }
+        } catch { /* skip */ }
+      })(),
+
+      // Jamendo trending
+      (async () => {
+        try {
+          const res = await fetchQuick(
+            `https://api.jamendo.com/v3.0/tracks/?client_id=${JAMENDO_CLIENT_ID}&format=json&limit=10&order=popularity_total&include=musicinfo`,
+            4000
+          )
+          if (res.ok) {
+            const data = await res.json()
+            if (data.results) {
+              data.results.forEach((s, i) => {
+                all.push({
+                  id: `jamendo_${s.id}`,
+                  title: s.name || 'Unknown',
+                  artist: s.artist_name || 'Unknown',
+                  url: s.audio || '',
+                  cover: s.image || BUILT_IN_COVERS[i % BUILT_IN_COVERS.length],
+                  source: 'jamendo',
+                  sourceName: 'Jamendo',
+                  duration: s.duration || 0,
+                })
+              })
+            }
+          }
+        } catch { /* skip */ }
+      })(),
+    ])
 
     // 3. Built-in songs as baseline (always available, no network)
     const builtin = [...BUILT_IN_MUSIC]
@@ -146,15 +149,23 @@ export function useMusicSources() {
     return trendingSongs.value
   }
 
-  // Search across ALL available sources
+  // Convert raw API results to uniform song objects
+  const toSong = (src) => (s) => ({
+    id: `${src}_${s.id}`,
+    title: s.title || s.name || 'Unknown',
+    artist: s.artist?.name || s.artist_name || 'Unknown',
+    url: s.url || s.audio || s.preview || '',
+    cover: s.cover || s.image || s.album?.cover_medium || s.strTrackThumb || '',
+    source: src,
+    sourceName: src === 'jamendo' ? 'Jamendo' : src === 'deezer' ? 'Deezer' : 'TheAudioDB',
+    duration: s.duration || 0,
+  })
+
+  // Search across ALL available sources — 并行请求，逐源显示
   const searchAcrossSources = async (query) => {
     if (!query.trim()) {
-      if (trendingSongs.value.length === 0) {
-        await getTrending()
-      }
-      searchResults.value = trendingSongs.value.length > 0
-        ? trendingSongs.value
-        : BUILT_IN_MUSIC
+      if (trendingSongs.value.length === 0) await getTrending()
+      searchResults.value = trendingSongs.value.length > 0 ? trendingSongs.value : BUILT_IN_MUSIC
       return searchResults.value
     }
 
@@ -164,81 +175,64 @@ export function useMusicSources() {
 
     const q = encodeURIComponent(query)
 
-    // Method 1: Jamendo (CORS-friendly)
-    const jamendoResults = []
-    try {
-      const res = await fetch(
-        `https://api.jamendo.com/v3.0/tracks/?client_id=${JAMENDO_CLIENT_ID}&format=json&limit=10&search=${q}&include=musicinfo`
-      )
-      if (res.ok) {
-        const data = await res.json()
-        if (data.results) {
-          data.results.forEach(s => {
-            jamendoResults.push({
-              id: `jamendo_${s.id}`,
-              title: s.name || 'Unknown',
-              artist: s.artist_name || 'Unknown',
-              url: s.audio || '',
-              cover: s.image || '',
-              source: 'jamendo',
-              sourceName: 'Jamendo',
-              duration: s.duration || 0,
-            })
-          })
-        }
-      }
-    } catch { /* skip */}
-
-    // Method 2: Deezer (may have CORS issues, use proxy fallback)
-    const deezerResults = []
-    try {
-      const res = await tryFetch(`https://api.deezer.com/search?q=${q}&limit=8`)
-      const data = res ? await res.json() : null
-      if (data?.data) {
-        data.data.forEach(s => {
-          deezerResults.push({
-            id: `deezer_${s.id}`, title: s.title || 'Unknown',
-            artist: s.artist?.name || 'Unknown', url: s.preview || '',
-            cover: s.album?.cover_medium || '', source: 'deezer',
-            sourceName: 'Deezer', duration: s.duration || 0,
-          })
-        })
-      }
-    } catch { /* skip */}
-
-    // Method 3: TheAudioDB (track metadata)
-    const audiodbResults = []
-    try {
-      const res = await fetch(
-        `https://www.theaudiodb.com/api/v1/json/123/searchtrack.php?s=${q}`
-      )
-      if (res.ok) {
-        const data = await res.json()
-        if (data?.track) {
-          data.track.slice(0, 8).forEach(s => {
-            audiodbResults.push({
-              id: `audiodb_${s.idTrack}`,
-              title: s.strTrack || 'Unknown',
-              artist: s.strArtist || 'Unknown',
-              url: s.strMusicVid || '',
-              cover: s.strTrackThumb || s.strAlbumThumb || '',
-              source: 'theAudioDB',
-              sourceName: 'TheAudioDB',
-              duration: parseInt(s.intDuration) || 0,
-            })
-          })
-        }
-      }
-    } catch { /* skip */}
-
-    // Method 4: Built-in match
+    // 内置匹配（瞬间完成，先显示）
     const builtinResults = BUILT_IN_MUSIC.filter(s =>
       s.title.toLowerCase().includes(query.toLowerCase()) ||
       s.artist.toLowerCase().includes(query.toLowerCase())
     )
+    if (builtinResults.length > 0) {
+      searchResults.value = builtinResults
+    }
 
-    // Combine all results
-    searchResults.value = [...jamendoResults, ...deezerResults, ...audiodbResults, ...builtinResults]
+    // 并行请求三个外部 API（谁先回来谁先显示）
+    const apiTasks = [
+      // Jamendo
+      fetchQuick(`https://api.jamendo.com/v3.0/tracks/?client_id=${JAMENDO_CLIENT_ID}&format=json&limit=10&search=${q}&include=musicinfo`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data?.results) {
+            const songs = data.results.map(toSong('jamendo'))
+            searchResults.value = [...searchResults.value, ...songs]
+          }
+        })
+        .catch(() => {}),
+
+      // Deezer
+      tryFetch(`https://api.deezer.com/search?q=${q}&limit=8`)
+        .then(res => res ? res.json() : null)
+        .then(data => {
+          if (data?.data) {
+            const songs = data.data.map(s => ({
+              id: `deezer_${s.id}`, title: s.title || 'Unknown',
+              artist: s.artist?.name || 'Unknown', url: s.preview || '',
+              cover: s.album?.cover_medium || '', source: 'deezer',
+              sourceName: 'Deezer', duration: s.duration || 0,
+            }))
+            searchResults.value = [...searchResults.value, ...songs]
+          }
+        })
+        .catch(() => {}),
+
+      // TheAudioDB
+      fetchQuick(`https://www.theaudiodb.com/api/v1/json/123/searchtrack.php?s=${q}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data?.track) {
+            const songs = data.track.slice(0, 8).map(s => ({
+              id: `audiodb_${s.idTrack}`, title: s.strTrack || 'Unknown',
+              artist: s.strArtist || 'Unknown', url: s.strMusicVid || '',
+              cover: s.strTrackThumb || s.strAlbumThumb || '',
+              source: 'theAudioDB', sourceName: 'TheAudioDB',
+              duration: parseInt(s.intDuration) || 0,
+            }))
+            searchResults.value = [...searchResults.value, ...songs]
+          }
+        })
+        .catch(() => {}),
+    ]
+
+    // 等所有 API 结束（不管成功失败），关闭 loading
+    await Promise.allSettled(apiTasks)
     isLoading.value = false
     return searchResults.value
   }
