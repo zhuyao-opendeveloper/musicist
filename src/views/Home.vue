@@ -4,6 +4,9 @@ import { Search, Disc3, Clock, TrendingUp, Sparkles, RefreshCw, Heart, Globe, Mu
 import NavHeader from '../components/NavHeader.vue'
 import MusicPlayer from '../components/MusicPlayer.vue'
 import SongCard from '../components/SongCard.vue'
+import NewsWidget from '../components/NewsWidget.vue'
+import AIRecommendWidget from '../components/AIRecommendWidget.vue'
+import StatsWidget from '../components/StatsWidget.vue'
 
 const music = inject('music')
 const auth = inject('auth')
@@ -167,27 +170,39 @@ onMounted(() => {
           </button>
         </div>
 
-        <!-- Grid -->
-        <div v-if="filteredSongs.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          <SongCard v-for="song in filteredSongs" :key="song.id || song.title" :song="song" />
-        </div>
+        <!-- Main Content: Grid + Widgets Sidebar -->
+        <div class="flex flex-col lg:flex-row gap-6">
+          <!-- Left: Songs Grid -->
+          <div class="flex-1 min-w-0">
+            <div v-if="filteredSongs.length > 0" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
+              <SongCard v-for="song in filteredSongs" :key="song.id || song.title" :song="song" />
+            </div>
 
-        <!-- Initial loading -->
-        <div v-else-if="isInitialLoading" class="text-center py-20 glass-card max-w-md mx-auto">
-          <div class="w-16 h-16 rounded-full bg-gradient-primary/20 flex items-center justify-center mx-auto mb-4">
-            <RefreshCw class="w-8 h-8 text-primary-400 animate-spin" />
-          </div>
-          <h3 class="text-white text-lg font-medium mb-2">正在加载音乐...</h3>
-          <p class="text-gray-400 text-sm">正在获取推荐曲目，请稍候</p>
-        </div>
+            <!-- Initial loading -->
+            <div v-else-if="isInitialLoading" class="text-center py-20 glass-card max-w-md mx-auto">
+              <div class="w-16 h-16 rounded-full bg-gradient-primary/20 flex items-center justify-center mx-auto mb-4">
+                <RefreshCw class="w-8 h-8 text-primary-400 animate-spin" />
+              </div>
+              <h3 class="text-white text-lg font-medium mb-2">正在加载音乐...</h3>
+              <p class="text-gray-400 text-sm">正在获取推荐曲目，请稍候</p>
+            </div>
 
-        <!-- Empty (only after loading finished) -->
-        <div v-else class="text-center py-20 glass-card max-w-md mx-auto">
-          <div class="w-16 h-16 rounded-full bg-gradient-primary/20 flex items-center justify-center mx-auto mb-4">
-            <Disc3 class="w-8 h-8 text-primary-400" />
+            <!-- Empty (only after loading finished) -->
+            <div v-else class="text-center py-20 glass-card max-w-md mx-auto">
+              <div class="w-16 h-16 rounded-full bg-gradient-primary/20 flex items-center justify-center mx-auto mb-4">
+                <Disc3 class="w-8 h-8 text-primary-400" />
+              </div>
+              <h3 class="text-white text-lg font-medium mb-2">暂无歌曲</h3>
+              <p class="text-gray-400 text-sm">搜索或浏览音乐</p>
+            </div>
           </div>
-          <h3 class="text-white text-lg font-medium mb-2">暂无歌曲</h3>
-          <p class="text-gray-400 text-sm">搜索或浏览音乐</p>
+
+          <!-- Right: Widgets Sidebar -->
+          <div class="w-full lg:w-80 xl:w-96 flex-shrink-0 space-y-4">
+            <div class="h-[220px]"><StatsWidget /></div>
+            <div class="h-[340px]"><AIRecommendWidget /></div>
+            <div class="h-[380px]"><NewsWidget /></div>
+          </div>
         </div>
       </div>
     </main>

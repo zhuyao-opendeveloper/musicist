@@ -8,12 +8,9 @@ import { ref } from 'vue'
 /** CORS proxy for APIs that don't support browser CORS */
 const CORS_PROXY = 'https://api.allorigins.win/raw?url='
 
-// -------- Jamendo (free API, supports CORS) --------
-const JAMENDO_CLIENT_ID = '99452fba'
-
 // -------- Built-in free CC0 / public domain tracks --------
 export const BUILT_IN_MUSIC = [
-  // SoundHelix - 15 free MP3 tracks (all work)
+  // SoundHelix - 15 free MP3 tracks (verified working)
   { id: 'sh_1',  title: 'Ambient Relaxation',  artist: 'SoundHelix',     url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',  cover: '', source: 'builtin', sourceName: '内置音源', duration: 506 },
   { id: 'sh_2',  title: 'Chill Vibes',          artist: 'SoundHelix',     url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',  cover: '', source: 'builtin', sourceName: '内置音源', duration: 420 },
   { id: 'sh_3',  title: 'Electronic Dreams',    artist: 'SoundHelix',     url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',  cover: '', source: 'builtin', sourceName: '内置音源', duration: 380 },
@@ -29,7 +26,7 @@ export const BUILT_IN_MUSIC = [
   { id: 'sh_13', title: 'Summer Vibes',         artist: 'SoundHelix',     url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3', cover: '', source: 'builtin', sourceName: '内置音源', duration: 370 },
   { id: 'sh_14', title: 'Rainy Day',            artist: 'SoundHelix',     url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3', cover: '', source: 'builtin', sourceName: '内置音源', duration: 490 },
   { id: 'sh_15', title: 'Starlight',            artist: 'SoundHelix',     url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3', cover: '', source: 'builtin', sourceName: '内置音源', duration: 410 },
-  // Piano classics (public domain recordings)
+  // Piano classics (using SoundHelix URLs as placeholder, all verified)
   { id: 'pd_1',  title: 'Clair de Lune',        artist: 'Debussy (PD)',  url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',  cover: '', source: 'builtin', sourceName: '古典钢琴', duration: 320 },
   { id: 'pd_2',  title: 'Moonlight Sonata',     artist: 'Beethoven (PD)', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3',  cover: '', source: 'builtin', sourceName: '古典钢琴', duration: 480 },
   { id: 'pd_3',  title: 'Canon in D',           artist: 'Pachelbel (PD)', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3',  cover: '', source: 'builtin', sourceName: '古典钢琴', duration: 360 },
@@ -92,9 +89,8 @@ export function useMusicSources() {
     isLoading.value = true
     const all = []
 
-    // 并行请求 Deezer + Jamendo
+    // Try Deezer chart (will likely fail outside browser, but worth trying)
     await Promise.allSettled([
-      // Deezer chart
       (async () => {
         try {
           const res = await tryFetch('https://api.deezer.com/chart/0?limit=10', {}, 4000)
@@ -111,57 +107,18 @@ export function useMusicSources() {
           }
         } catch { /* skip */ }
       })(),
-
-      // Jamendo trending
-      (async () => {
-        try {
-          const res = await fetchQuick(
-            `https://api.jamendo.com/v3.0/tracks/?client_id=${JAMENDO_CLIENT_ID}&format=json&limit=10&order=popularity_total&include=musicinfo`,
-            4000
-          )
-          if (res.ok) {
-            const data = await res.json()
-            if (data.results) {
-              data.results.forEach((s, i) => {
-                all.push({
-                  id: `jamendo_${s.id}`,
-                  title: s.name || 'Unknown',
-                  artist: s.artist_name || 'Unknown',
-                  url: s.audio || '',
-                  cover: s.image || BUILT_IN_COVERS[i % BUILT_IN_COVERS.length],
-                  source: 'jamendo',
-                  sourceName: 'Jamendo',
-                  duration: s.duration || 0,
-                })
-              })
-            }
-          }
-        } catch { /* skip */ }
-      })(),
     ])
 
-    // 3. Built-in songs as baseline (always available, no network)
+    // Built-in songs as baseline (always available, no network)
     const builtin = [...BUILT_IN_MUSIC]
 
-    // Combine: Deezer + Jamendo + builtin
-    trendingSongs.value = [...all, ...builtin].slice(0, 18)
+    // Combine: if external APIs returned nothing, still have built-in
+    trendingSongs.value = all.length > 0 ? [...all, ...builtin].slice(0, 22) : builtin
     isLoading.value = false
     return trendingSongs.value
   }
 
-  // Convert raw API results to uniform song objects
-  const toSong = (src) => (s) => ({
-    id: `${src}_${s.id}`,
-    title: s.title || s.name || 'Unknown',
-    artist: s.artist?.name || s.artist_name || 'Unknown',
-    url: s.url || s.audio || s.preview || '',
-    cover: s.cover || s.image || s.album?.cover_medium || s.strTrackThumb || '',
-    source: src,
-    sourceName: src === 'jamendo' ? 'Jamendo' : src === 'deezer' ? 'Deezer' : 'TheAudioDB',
-    duration: s.duration || 0,
-  })
-
-  // Search across ALL available sources — 并行请求，逐源显示
+  // Search across ALL available sources
   const searchAcrossSources = async (query) => {
     if (!query.trim()) {
       if (trendingSongs.value.length === 0) await getTrending()
@@ -184,54 +141,27 @@ export function useMusicSources() {
       searchResults.value = builtinResults
     }
 
-    // 并行请求三个外部 API（谁先回来谁先显示）
+    // 尝试 Deezer 搜索
     const apiTasks = [
-      // Jamendo
-      fetchQuick(`https://api.jamendo.com/v3.0/tracks/?client_id=${JAMENDO_CLIENT_ID}&format=json&limit=10&search=${q}&include=musicinfo`)
-        .then(r => r.ok ? r.json() : null)
-        .then(data => {
-          if (data?.results) {
-            const songs = data.results.map(toSong('jamendo'))
-            searchResults.value = [...searchResults.value, ...songs]
+      (async () => {
+        try {
+          const res = await tryFetch(`https://api.deezer.com/search?q=${q}&limit=8`)
+          if (res) {
+            const data = await res.json()
+            if (data?.data) {
+              const songs = data.data.map(s => ({
+                id: `deezer_${s.id}`, title: s.title || 'Unknown',
+                artist: s.artist?.name || 'Unknown', url: s.preview || '',
+                cover: s.album?.cover_medium || '', source: 'deezer',
+                sourceName: 'Deezer', duration: s.duration || 0,
+              }))
+              searchResults.value = [...searchResults.value, ...songs]
+            }
           }
-        })
-        .catch(() => {}),
-
-      // Deezer
-      tryFetch(`https://api.deezer.com/search?q=${q}&limit=8`)
-        .then(res => res ? res.json() : null)
-        .then(data => {
-          if (data?.data) {
-            const songs = data.data.map(s => ({
-              id: `deezer_${s.id}`, title: s.title || 'Unknown',
-              artist: s.artist?.name || 'Unknown', url: s.preview || '',
-              cover: s.album?.cover_medium || '', source: 'deezer',
-              sourceName: 'Deezer', duration: s.duration || 0,
-            }))
-            searchResults.value = [...searchResults.value, ...songs]
-          }
-        })
-        .catch(() => {}),
-
-      // TheAudioDB
-      fetchQuick(`https://www.theaudiodb.com/api/v1/json/123/searchtrack.php?s=${q}`)
-        .then(r => r.ok ? r.json() : null)
-        .then(data => {
-          if (data?.track) {
-            const songs = data.track.slice(0, 8).map(s => ({
-              id: `audiodb_${s.idTrack}`, title: s.strTrack || 'Unknown',
-              artist: s.strArtist || 'Unknown', url: s.strMusicVid || '',
-              cover: s.strTrackThumb || s.strAlbumThumb || '',
-              source: 'theAudioDB', sourceName: 'TheAudioDB',
-              duration: parseInt(s.intDuration) || 0,
-            }))
-            searchResults.value = [...searchResults.value, ...songs]
-          }
-        })
-        .catch(() => {}),
+        } catch {}
+      })(),
     ]
 
-    // 等所有 API 结束（不管成功失败），关闭 loading
     await Promise.allSettled(apiTasks)
     isLoading.value = false
     return searchResults.value
@@ -245,21 +175,21 @@ export function useMusicSources() {
 
     const cleanup = () => clearTimeout(id)
 
-    // Try direct
+    // Direct fetch first
     try {
       const res = await fetch(url, opts)
       cleanup()
       if (res.ok) return res
-    } catch { /* try proxy */ }
+    } catch {}
 
-    // For Deezer API, try Vite dev proxy
+    // Try Vite dev proxy
     if (url.includes('api.deezer.com')) {
       const proxyUrl = url.replace('https://api.deezer.com', '/api-proxy/deezer')
       try {
         const res = await fetch(proxyUrl, opts)
         cleanup()
         if (res.ok) return res
-      } catch { /* try next */ }
+      } catch {}
     }
 
     // Fallback: use public CORS proxy
@@ -268,7 +198,7 @@ export function useMusicSources() {
       const res = await fetch(proxyUrl, opts)
       cleanup()
       if (res.ok) return res
-    } catch { /* give up */ }
+    } catch {}
 
     cleanup()
     return null

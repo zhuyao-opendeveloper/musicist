@@ -5,44 +5,77 @@ export function useAI() {
   const isLoading = ref(false)
   const error = ref('')
 
-  const GITHUB_MODELS_API = 'https://models.inference.ai.azure.com/v1/chat/completions'
-
+  /**
+   * AI 聊天补全 — 尝试多个后端，自动 fallback:
+   * 1. OpenAI (api-key 优先)
+   * 2. DeepSeek
+   * 3. GitHub Models (GitHub token)
+   */
   const chatCompletion = async (messages, model = 'gpt-4o-mini') => {
-    const token = auth.getToken()
-    if (!token) {
-      throw new Error('未登录，无法使用AI功能')
-    }
-
     isLoading.value = true
     error.value = ''
 
-    try {
-      const response = await fetch(GITHUB_MODELS_API, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model,
-          messages,
-          temperature: 0.7,
-          max_tokens: 1024,
-        }),
-      })
+    const apiKeys = auth?.apiKeys?.value || {}
 
-      if (!response.ok) {
-        throw new Error(`API调用失败: ${response.status}`)
+    // 尝试列表：OpenAI → DeepSeek → GitHub Models
+    const providers = [
+      {
+        name: 'OpenAI',
+        url: 'https://api.openai.com/v1/chat/completions',
+        key: apiKeys.openaiKey,
+        model: 'gpt-4o-mini',
+      },
+      {
+        name: 'DeepSeek',
+        url: 'https://api.deepseek.com/v1/chat/completions',
+        key: apiKeys.deepseekKey,
+        model: 'deepseek-chat',
+      },
+      {
+        name: 'GitHub Models',
+        url: 'https://models.inference.ai.azure.com/v1/chat/completions',
+        key: auth?.getToken ? auth.getToken() : '',
+        model: 'gpt-4o-mini',
+      },
+    ]
+
+    for (const provider of providers) {
+      if (!provider.key) continue
+
+      try {
+        const response = await fetch(provider.url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${provider.key}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: provider.model,
+            messages,
+            temperature: 0.7,
+            max_tokens: 1024,
+          }),
+          signal: AbortSignal.timeout(8000),
+        })
+
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 403) continue // unauthorized, try next
+          throw new Error(`${provider.name} 调用失败: ${response.status}`)
+        }
+
+        const data = await response.json()
+        isLoading.value = false
+        return data.choices[0].message.content
+      } catch (e) {
+        console.warn(`${provider.name} AI 失败:`, e.message)
+        continue
       }
-
-      const data = await response.json()
-      return data.choices[0].message.content
-    } catch (e) {
-      error.value = e.message
-      throw e
-    } finally {
-      isLoading.value = false
     }
+
+    // 所有 provider 都失败了
+    isLoading.value = false
+    error.value = 'AI 服务不可用，请检查 API 密钥配置'
+    throw new Error(error.value)
   }
 
   const classifyDanmaku = async (content) => {
@@ -59,7 +92,7 @@ export function useAI() {
       const response = await chatCompletion([
         { role: 'system', content: '你是一个内容审查助手。请严格按照指定格式返回结果。' },
         { role: 'user', content: prompt },
-      ])
+      ], 'gpt-4o-mini')
 
       const match = response.match(/\{[\s\S]*\}/)
       if (match) {
@@ -102,7 +135,7 @@ ${availableSongs}
       const response = await chatCompletion([
         { role: 'system', content: '你是一个音乐推荐助手。请分析用户的听歌偏好，推荐最匹配的歌曲。' },
         { role: 'user', content: prompt },
-      ])
+      ], 'gpt-4o-mini')
 
       const match = response.match(/\{[\s\S]*\}/)
       if (match) {
@@ -122,7 +155,7 @@ ${songTitles.join('\n')}`
       const response = await chatCompletion([
         { role: 'system', content: '你是一个音乐文案助手。请用生动有趣的语言描述播放列表。' },
         { role: 'user', content: prompt },
-      ])
+      ], 'gpt-4o-mini')
       return response.trim()
     } catch {
       return '精心挑选的音乐合集'

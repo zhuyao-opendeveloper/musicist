@@ -1,5 +1,5 @@
 <script setup>
-import { ref, inject, computed, watch, onMounted } from 'vue'
+import { ref, inject, computed, watch, onMounted, onUnmounted } from 'vue'
 import {
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX,
   Heart, Repeat, Shuffle, ListMusic, ChevronUp, ChevronDown
